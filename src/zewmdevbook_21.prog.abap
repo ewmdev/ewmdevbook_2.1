@@ -12,6 +12,9 @@ INCLUDE zewmdevbook_21_top                      .    " Global Data
 
 BREAK-POINT ID zewmdevbook_21.
 
+PARAMETERS: docno  TYPE /scdl/dl_docno_int,
+            itemno TYPE /scdl/dl_itemno.
+
 "2.1 Object Instances BOPF
 DATA: lo_sp          TYPE REF TO /scdl/cl_sp_prd_out,
       lo_message_box TYPE REF TO /scdl/cl_sp_message_box.
@@ -34,17 +37,17 @@ DATA: ls_options      TYPE /scdl/s_sp_query_options,
       lt_messages     TYPE /scdl/dm_message_tab.
 
 DATA(ls_selections) = VALUE /scdl/s_sp_selection(
-  fieldname = /scdl/if_dl_logfname_c=>sc_refdocno_erp_h
+  fieldname = /scdl/if_dl_logfname_c=>sc_docno_h
   sign      = wmegc_sign_inclusive
   option    = wmegc_option_eq
-  low       = '80000000' ).
+  low       = |{ docno ALPHA = IN }| ).
 APPEND ls_selections TO lt_selections.
 CLEAR ls_selections.
 ls_selections = VALUE #(
-  fieldname = /scdl/if_dl_logfname_c=>sc_refitemno_erp_i
+  fieldname = /scdl/if_dl_logfname_c=>sc_itemno_i
   sign      = wmegc_sign_inclusive
   option    = wmegc_option_eq
-  low       = '10' ).
+  low       = |{ itemno ALPHA = IN }| ).
 APPEND ls_selections TO lt_selections.
 
 lo_sp->query(
@@ -113,16 +116,15 @@ DATA:
 DATA(lo_delivery) = NEW /scwm/cl_dlv_management_prd( ).
 "Build up range of select options
 DATA(ls_selection) = VALUE /scwm/dlv_selection_str(
-  fieldname = /scdl/if_dl_logfname_c=>sc_refdocno_erp_h
+  fieldname = /scdl/if_dl_logfname_c=>sc_docno_h
   sign      = wmegc_sign_inclusive
   option    = wmegc_option_eq
-  low       = '80000000' ).
+  low       = |{ docno ALPHA = IN }| ).
 APPEND ls_selection TO lt_selection.
 "Set read options
 DATA(ls_read_options) = VALUE /scwm/dlv_query_contr_str(
   data_retrival_only      = abap_true
-  mix_in_object_instances = /scwm/if_dl_c=>sc_mix_in_load_instance
-  item_part_select        = abap_true ).
+  mix_in_object_instances = /scwm/if_dl_c=>sc_mix_in_load_instance ).
 "Call DLV query
 TRY.
     CALL METHOD lo_delivery->query

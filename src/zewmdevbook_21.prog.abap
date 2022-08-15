@@ -20,7 +20,7 @@ TRY.
   CATCH /scdl/cx_delivery.
 ENDTRY.
 
-"2.2 Example Delivery Query BOPF
+"2.2 Example Delivery BOPF based Query
 DATA: lt_bopf_items TYPE /scdl/t_sp_a_item.
 
 lo_sp->query(
@@ -44,7 +44,7 @@ IF lv_rejected = abap_true.
   EXIT.
 ENDIF.
 
-"2.3 Example Delivery Aspect Select BOPF
+"2.3 Example Delivery BOPF based Aspect Select
 DATA: lt_a_item_delterms TYPE /scdl/t_sp_a_item_delterm.
 
 lo_sp->select(
@@ -66,7 +66,7 @@ ELSEIF line_exists( lt_return_codes[ failed = abap_true ] ).
   EXIT.
 ENDIF.
 
-"2.4 Example Delivery Aspect Select by Relation BOPF
+"2.4 Example Delivery BOPF base Aspect Select by Relation
 lo_sp->select_by_relation(
   EXPORTING
     relation  = /scdl/if_sp_c=>sc_rel_head_to_item
@@ -77,6 +77,7 @@ lo_sp->select_by_relation(
     rejected     = lv_rejected
     return_codes = lt_return_codes ).
 
+SORT lt_bopf_items ASCENDING.
 DELETE ADJACENT DUPLICATES FROM lt_bopf_items.
 LOOP AT lt_bopf_items ASSIGNING FIELD-SYMBOL(<bopf_item>).
   WRITE: / 'BOPF',
@@ -86,11 +87,11 @@ LOOP AT lt_bopf_items ASSIGNING FIELD-SYMBOL(<bopf_item>).
 ENDLOOP.
 
 
-"2.5 Example Delivery Query EWM Service Provider
+"2.5 Example Delivery EWM Service Provider based Query
 BREAK-POINT ID zewmdevbook_21.
 "Get instance of service provider class
 DATA(lo_delivery) = NEW /scwm/cl_dlv_management_prd( ).
-"Call DLV query method of service provider class
+"Call query method of service provider class
 TRY.
     CALL METHOD lo_delivery->query
       EXPORTING
@@ -123,22 +124,22 @@ LOOP AT lt_srv_headers ASSIGNING FIELD-SYMBOL(<srv_header>).
            <srv_header>-doctype.
 ENDLOOP.
 
-"2.6 Example Delivery Hierarchy
-LOOP AT lt_srv_items ASSIGNING FIELD-SYMBOL(<item>).
+"2.6 Example Delivery Hierarchy EWM Service Provider
+LOOP AT lt_srv_items ASSIGNING FIELD-SYMBOL(<srv_item>).
   "Check hierarchy
   DATA(lo_corr) = /scwm/cl_dlv_correlation=>get_instance( ).
-  LOOP AT <item>-hierarchy INTO DATA(ls_hierarchy).
+  LOOP AT <srv_item>-hierarchy ASSIGNING FIELD-SYMBOL(<srv_item_hierarchy>).
     TRY.
         CALL METHOD lo_corr->get_hier_cat
           EXPORTING
-            iv_hierarchy_type = ls_hierarchy-hierarchy_type
+            iv_hierarchy_type = <srv_item_hierarchy>-hierarchy_type
           IMPORTING
             ev_hierarchy_cat  = DATA(lv_cat).
       CATCH /bopf/cx_frw .
     ENDTRY.
     "Skip split items
     IF  lv_cat = /scdl/if_dl_hierarchy_c=>sc_cat_ssp
-    AND ls_hierarchy-parent_object IS NOT INITIAL.
+    AND <srv_item_hierarchy>-parent_object IS NOT INITIAL.
       DATA(lv_skip) = abap_true.
       EXIT.
     ENDIF.
@@ -149,7 +150,7 @@ LOOP AT lt_srv_items ASSIGNING FIELD-SYMBOL(<item>).
   ENDIF.
 
   TRY.
-      DATA(ls_status) = <item>-status[
+      DATA(ls_status) = <srv_item>-status[
         status_type = /scdl/if_dl_status_c=>sc_t_picking ].
 
       IF ls_status-status_value = /scdl/if_dl_status_c=>sc_v_not_relevant.
@@ -157,30 +158,30 @@ LOOP AT lt_srv_items ASSIGNING FIELD-SYMBOL(<item>).
         CONTINUE.
       ELSEIF ls_status-status_value NE /scdl/if_dl_status_c=>sc_v_finished.
         "Item & not yet completely picked.
-        MESSAGE i001(zewmdevbook_21) WITH <item>-itemno.
+        MESSAGE i001(zewmdevbook_21) WITH <srv_item>-itemno.
         CONTINUE.
       ENDIF.
     CATCH cx_sy_itab_line_not_found.
       "Item & not relevant for picking.
-      MESSAGE i003(zewmdevbook_21) WITH <item>-itemno.
+      MESSAGE i003(zewmdevbook_21) WITH <srv_item>-itemno.
   ENDTRY.
 
   TRY.
-      DATA(ls_addmeas) = <item>-addmeas[
+      DATA(ls_addmeas) = <srv_item>-addmeas[
        qty_role = /scdl/if_dl_addmeas_c=>sc_qtyrole_pack
        qty_category = /scdl/if_dl_addmeas_c=>sc_qtycat_open ].
       IF ls_addmeas-qty NE 0.
         "Item & not yet completely packed.
-        MESSAGE i002(zewmdevbook_21) WITH <item>-itemno.
+        MESSAGE i002(zewmdevbook_21) WITH <srv_item>-itemno.
       ENDIF.
     CATCH cx_sy_itab_line_not_found.
       "Item & not relevant for packing.
-      MESSAGE i004(zewmdevbook_21) WITH <item>-itemno.
+      MESSAGE i004(zewmdevbook_21) WITH <srv_item>-itemno.
   ENDTRY.
 ENDLOOP.
 
 
-"2.7 Example Delivery Query API
+"2.7 Example Delivery API based Query
 BREAK-POINT ID zewmdevbook_21.
 "Set warehouse request of type Outbound Delivery Order
 DATA: lo_api_outb TYPE REF TO /scwm/if_api_whr_outbound.

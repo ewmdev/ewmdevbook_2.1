@@ -15,6 +15,27 @@
      <ENTRY>Program ZEWMDEVBOOK_21</ENTRY>
      <LENGTH>22</LENGTH>
     </item>
+    <item>
+     <ID>S</ID>
+     <KEY>P_DOCNO</KEY>
+     <ENTRY>.</ENTRY>
+     <LENGTH>9</LENGTH>
+     <SPLIT>D</SPLIT>
+    </item>
+    <item>
+     <ID>S</ID>
+     <KEY>P_ITEMNO</KEY>
+     <ENTRY>.</ENTRY>
+     <LENGTH>9</LENGTH>
+     <SPLIT>D</SPLIT>
+    </item>
+    <item>
+     <ID>S</ID>
+     <KEY>P_LGNUM</KEY>
+     <ENTRY>.</ENTRY>
+     <LENGTH>9</LENGTH>
+     <SPLIT>D</SPLIT>
+    </item>
    </TPOOL>
   </asx:values>
  </asx:abap>

@@ -19,6 +19,18 @@
      <MSGNR>002</MSGNR>
      <TEXT>Item &amp; not yet completely packed.</TEXT>
     </T100>
+    <T100>
+     <SPRSL>E</SPRSL>
+     <ARBGB>ZEWMDEVBOOK_21</ARBGB>
+     <MSGNR>003</MSGNR>
+     <TEXT>Item &amp; not relevant for picking.</TEXT>
+    </T100>
+    <T100>
+     <SPRSL>E</SPRSL>
+     <ARBGB>ZEWMDEVBOOK_21</ARBGB>
+     <MSGNR>004</MSGNR>
+     <TEXT>Item &amp; not relevant for packing.</TEXT>
+    </T100>
    </T100>
   </asx:values>
  </asx:abap>

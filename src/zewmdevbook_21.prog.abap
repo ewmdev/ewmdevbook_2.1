@@ -3,18 +3,12 @@
 *&---------------------------------------------------------------------*
 *&
 *&---------------------------------------------------------------------*
+REPORT zewmdevbook_21.
 
-INCLUDE zewmdevbook_21_top                      .    " Global Data
-
-* INCLUDE ZEWMDEVBOOK_21_O01                      .  " PBO-Modules
-* INCLUDE ZEWMDEVBOOK_21_I01                      .  " PAI-Modules
-* INCLUDE ZEWMDEVBOOK_21_F01                      .  " FORM-Routines
+PARAMETERS: p_docno  TYPE /scdl/dl_docno_int,
+            p_itemno TYPE /scdl/dl_itemno.
 
 BREAK-POINT ID zewmdevbook_21.
-
-PARAMETERS: docno  TYPE /scdl/dl_docno_int,
-            itemno TYPE /scdl/dl_itemno.
-
 "2.1 Object Instances BOPF
 DATA: lo_sp          TYPE REF TO /scdl/cl_sp_prd_out,
       lo_message_box TYPE REF TO /scdl/cl_sp_message_box.
@@ -40,14 +34,14 @@ DATA(ls_selections) = VALUE /scdl/s_sp_selection(
   fieldname = /scdl/if_dl_logfname_c=>sc_docno_h
   sign      = wmegc_sign_inclusive
   option    = wmegc_option_eq
-  low       = |{ docno ALPHA = IN }| ).
+  low       = |{ p_docno ALPHA = IN }| ).
 APPEND ls_selections TO lt_selections.
 CLEAR ls_selections.
 ls_selections = VALUE #(
   fieldname = /scdl/if_dl_logfname_c=>sc_itemno_i
   sign      = wmegc_sign_inclusive
   option    = wmegc_option_eq
-  low       = |{ itemno ALPHA = IN }| ).
+  low       = |{ p_itemno ALPHA = IN }| ).
 APPEND ls_selections TO lt_selections.
 
 lo_sp->query(
@@ -105,6 +99,7 @@ lo_sp->select_by_relation(
     rejected     = lv_rejected
     return_codes = lt_return_codes ).
 
+BREAK-POINT ID zewmdevbook_21.
 "2.5 Example Delivery Query EWM Service Provider
 DATA:
   lt_message        TYPE /scdl/dm_message_tab,
@@ -119,7 +114,7 @@ DATA(ls_selection) = VALUE /scwm/dlv_selection_str(
   fieldname = /scdl/if_dl_logfname_c=>sc_docno_h
   sign      = wmegc_sign_inclusive
   option    = wmegc_option_eq
-  low       = |{ docno ALPHA = IN }| ).
+  low       = |{ p_docno ALPHA = IN }| ).
 APPEND ls_selection TO lt_selection.
 "Set read options
 DATA(ls_read_options) = VALUE /scwm/dlv_query_contr_str(
@@ -195,3 +190,52 @@ LOOP AT lt_items ASSIGNING FIELD-SYMBOL(<item>).
     MESSAGE e002(zewmdevbook_21) WITH <item>-itemno.
   ENDIF.
 ENDLOOP.
+
+BREAK-POINT ID zewmdevbook_21.
+"2.7 Example Delivery Query API
+DATA: lo_api_outb TYPE REF TO /scwm/if_api_whr_outbound,
+      lt_bus_key  TYPE /scwm/if_api_warehouse_request=>yt_whr_bus_key,
+      lt_whr_key  TYPE /scdl/t_sp_k_head,
+      rt_refdoc   TYPE /scdl/dl_refdoc_tab.
+
+/scwm/cl_api_factory=>get_service( IMPORTING eo_api = lo_api_outb ).
+
+APPEND p_docno TO lt_bus_key.
+
+lo_api_outb->/scwm/if_api_warehouse_request~get_keys_for_bus_keys(
+      EXPORTING
+        it_whr_bus_keys = lt_bus_key
+      IMPORTING
+        et_whr_keymap   = DATA(et_keys_map) ).
+
+DATA(ls_whr_key)         = VALUE /scdl/s_sp_k_head(
+  docid = et_keys_map[ 1 ]-docid ).
+APPEND ls_whr_key TO lt_whr_key.
+DATA(ls_api_include)     = VALUE /scwm/if_api_whr_outbound=>ys_include(
+  head_refdoc = abap_true ).
+DATA(ls_api_lock_option) = VALUE /scwm/if_api_warehouse_request=>ys_lock_options(
+  lock_result = abap_false ).
+DATA(ls_api_read_option) = VALUE /scwm/if_api_warehouse_request=>ys_read_options(
+  fast_for_display = abap_true
+  include_deleted  = abap_true ).
+
+TRY.
+    lo_api_outb->read_outbound_dlv_order(
+      EXPORTING
+        it_whr_key      = lt_whr_key
+        is_include      = ls_api_include
+        is_read_options = ls_api_read_option
+        is_locking      = ls_api_lock_option
+      IMPORTING
+        et_headers      = DATA(lt_api_headers) ).
+  CATCH /scwm/cx_api_faulty_call ##NO_HANDLER.
+ENDTRY.
+
+ASSERT lt_api_headers IS NOT INITIAL.
+* Delivery not found
+
+READ TABLE lt_api_headers ASSIGNING FIELD-SYMBOL(<fs_api_header>)
+  WITH KEY docid = et_keys_map[ 1 ]-docid.
+IF sy-subrc = 0.
+  rt_refdoc = <fs_api_header>-refdoc.
+ENDIF.

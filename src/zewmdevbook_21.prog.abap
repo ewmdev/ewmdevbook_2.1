@@ -222,7 +222,6 @@ ENDLOOP.
 
 "2.8 Sample Call of Function Module /SCWM/TO_CREATE_WHR
 DATA: lt_create_whr TYPE /scwm/tt_to_prep_whr_int,
-      lv_tanum      TYPE /scwm/tanum,
       lt_ltap_vb    TYPE /scwm/tt_ltap_vb,
       lt_bapiret    TYPE bapirettab,
       lv_severity   TYPE bapi_mtype.

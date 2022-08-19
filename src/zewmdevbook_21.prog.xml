@@ -12,29 +12,41 @@
    <TPOOL>
     <item>
      <ID>R</ID>
-     <ENTRY>Program ZEWMDEVBOOK_21</ENTRY>
-     <LENGTH>22</LENGTH>
+     <ENTRY>Example Warehouse Request Processing</ENTRY>
+     <LENGTH>36</LENGTH>
     </item>
     <item>
      <ID>S</ID>
      <KEY>P_DOCNO</KEY>
      <ENTRY>.</ENTRY>
-     <LENGTH>9</LENGTH>
+     <LENGTH>23</LENGTH>
      <SPLIT>D</SPLIT>
     </item>
     <item>
      <ID>S</ID>
      <KEY>P_ITEMNO</KEY>
      <ENTRY>.</ENTRY>
-     <LENGTH>9</LENGTH>
+     <LENGTH>19</LENGTH>
      <SPLIT>D</SPLIT>
     </item>
     <item>
      <ID>S</ID>
      <KEY>P_LGNUM</KEY>
      <ENTRY>.</ENTRY>
-     <LENGTH>9</LENGTH>
+     <LENGTH>24</LENGTH>
      <SPLIT>D</SPLIT>
+    </item>
+    <item>
+     <ID>S</ID>
+     <KEY>P_WT_API</KEY>
+     <ENTRY>WT Creation by API</ENTRY>
+     <LENGTH>26</LENGTH>
+    </item>
+    <item>
+     <ID>S</ID>
+     <KEY>P_WT_FM</KEY>
+     <ENTRY>WT Creation by FM</ENTRY>
+     <LENGTH>25</LENGTH>
     </item>
    </TPOOL>
   </asx:values>

@@ -1,7 +1,7 @@
 *&---------------------------------------------------------------------*
 *& Report ZEWMDEVBOOK_21
 *&---------------------------------------------------------------------*
-*&
+*& Example Report for Warehouse Request Processing
 *&---------------------------------------------------------------------*
 REPORT zewmdevbook_21.
 
@@ -184,20 +184,20 @@ ENDLOOP.
 "2.7 Example Delivery API based Query
 BREAK-POINT ID zewmdevbook_21.
 "Set warehouse request of type Outbound Delivery Order
-DATA: lo_api_outb TYPE REF TO /scwm/if_api_whr_outbound.
-/scwm/cl_api_factory=>get_service( IMPORTING eo_api = lo_api_outb ).
+DATA: lo_whr_api_outb TYPE REF TO /scwm/if_api_whr_outbound.
+/scwm/cl_api_factory=>get_service( IMPORTING eo_api = lo_whr_api_outb ).
 "Set warehouse number obligatory for API
 /scwm/cl_tm=>set_lgnum( p_lgnum ).
 "Map business keys to warehouse request keys and read ODOs
 TRY.
-    lo_api_outb->/scwm/if_api_warehouse_request~get_keys_for_bus_keys(
+    lo_whr_api_outb->/scwm/if_api_warehouse_request~get_keys_for_bus_keys(
           EXPORTING
             it_whr_bus_keys = VALUE /scwm/if_api_warehouse_request=>yt_whr_bus_key(
               ( docno = |{ p_docno ALPHA = IN }| ) )
           IMPORTING
             et_whr_keymap   = DATA(et_keys_map) ).
 
-    lo_api_outb->read_outbound_dlv_order(
+    lo_whr_api_outb->read_outbound_dlv_order(
       EXPORTING
         it_whr_key      = CORRESPONDING #( et_keys_map )
         is_include      = VALUE #( head_refdoc = abap_true )
@@ -205,13 +205,63 @@ TRY.
                                    include_deleted  = abap_true )
         is_locking      = VALUE #( lock_result = abap_false )
       IMPORTING
-        et_headers      = DATA(lt_api_headers) ).
+        et_headers      = DATA(lt_whr_api_headers) ).
   CATCH /scwm/cx_api_faulty_call ##NO_HANDLER.
 ENDTRY.
 
-LOOP AT lt_api_headers ASSIGNING FIELD-SYMBOL(<api_header>).
+LOOP AT lt_whr_api_headers ASSIGNING FIELD-SYMBOL(<whr_api_header>).
   WRITE: / 'API ',
-           <api_header>-docno,
-           <api_header>-doccat,
-           <api_header>-doctype.
+           <whr_api_header>-docno,
+           <whr_api_header>-doccat,
+           <whr_api_header>-doctype.
 ENDLOOP.
+
+
+"2.8 Sample Call of Function Module /SCWM/TO_CREATE_WHR
+DATA: lt_create_whr TYPE /scwm/tt_to_prep_whr_int,
+      lv_tanum      TYPE /scwm/tanum,
+      lt_ltap_vb    TYPE /scwm/tt_ltap_vb,
+      lt_bapiret    TYPE bapirettab,
+      lv_severity   TYPE bapi_mtype.
+
+* Call Central Cleanup
+/scwm/cl_tm=>cleanup( EXPORTING iv_lgnum = p_lgnum ).
+* Transfer DLV Keys
+LOOP AT lt_srv_items ASSIGNING <srv_item>.
+  DATA(ls_create_whr) = VALUE /scwm/s_to_prepare_whr_int(
+    rdocid  = <srv_item>-docid
+    ritmid  = <srv_item>-itemid
+    rdoccat = <srv_item>-doccat ).
+  APPEND ls_create_whr TO lt_create_whr.
+  CLEAR ls_create_whr.
+ENDLOOP.
+* Trigger WT Creation
+CALL FUNCTION '/SCWM/TO_CREATE_WHR'
+  EXPORTING
+    iv_lgnum       = p_lgnum
+    iv_bname       = sy-uname
+    it_create_whr  = lt_create_whr
+    iv_update_task = abap_false
+    iv_commit_work = abap_true
+  IMPORTING
+    et_ltap_vb     = lt_ltap_vb
+    et_bapiret     = lt_bapiret
+    ev_severity    = lv_severity.
+
+
+"2.9 Sample Call of API /SCWM/TO_CREATE_WHR
+DATA: lo_wt_api TYPE REF TO /scwm/cl_api_whse_task.
+/scwm/cl_api_factory=>get_service( IMPORTING eo_api = lo_wt_api ).
+
+TRY.
+    lo_wt_api->/scwm/if_api_whse_task~create_for_whr(
+        EXPORTING
+          iv_whno        = p_lgnum
+          it_create      = CORRESPONDING #( lt_create_whr )
+        IMPORTING
+          et_created_wht = DATA(lt_created_whr_wht)
+          eo_message     = DATA(lo_error_msg) ).
+
+    lo_error_msg->get_messages( IMPORTING et_message = DATA(lt_error_msg) ).
+  CATCH /scwm/cx_api_whse_task. " Faulty Calls of Warehouse task API
+ENDTRY.
